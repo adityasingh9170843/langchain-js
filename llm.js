@@ -1,17 +1,31 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
+dotenv.config();
 
-dotenv.config({ quiet: true });
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-const model = new ChatGoogleGenerativeAI({
-  apiKey: process.env.GOOGLE_API_KEY,
-  model: "gemini-2.5-pro",
-  maxOutputTokens: 1000,
-});
+async function main() {
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.0-flash-001',
+    contents: [
+      {
+        role: 'user', // behaves like system
+        parts: [
+          { text: 'You are a friendly and knowledgeable tour guide for Delhi, India. Keep your responses concise and exciting.' }
+        ]
+      },
+      {
+        role: 'user',
+        parts: [
+          { text: 'Who are you?' }
+        ]
+      }
+    ]
+  });
 
-const response = await model.stream("write a short story about a dog");
-
-for await (const chunk of response) {
-  console.log(chunk?.content);
+  console.log(response.candidates[0].content.parts[0].text); 
 }
+
+main();
