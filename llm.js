@@ -3,12 +3,11 @@ process.on("warning", () => {});
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import { tavily } from "@tavily/core";
-dotenv.config({quiet: true});
-
+import { json, text } from "stream/consumers";
+dotenv.config({ quiet: true });
 
 const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 
 const webSearchTool = {
   functionDeclarations: [
@@ -30,50 +29,74 @@ const webSearchTool = {
 };
 
 async function main() {
-  
+  const systemInstruction = `You are a smart personal assistant who answers the asked questions.
+        you have access to following tools :
+        1.webSearch((query):{query:"String"}) //Search the latest information and realtime news about a topic.`
+
+  const userPrompt = {
+    role:"user",
+    parts:[{text:"What's the current price of Nvidia stock?"}]
+  }
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
-    contents: "What's the current price of Nvidia stock?",
+    contents: userPrompt,
     config: {
       tools: [webSearchTool],
-      systemInstruction:
-        "You are a smart personal assistant who answers the asked questions.",
+      systemInstruction: systemInstruction,
     },
-    
   });
 
 
-  
+
   const toolCalls = response.functionCalls;
 
-  if(!toolCalls) {
+  if (!toolCalls) {
     console.log("No tool calls found");
     return;
   }
-  
-  for(const tool of toolCalls){
-    
+
+  let result;
+  for (const tool of toolCalls) {
     const functionName = tool.name;
-    const params = tool.args
+    const params = tool.args;
 
-    if(functionName === 'webSearch'){
-      const result = await webSearch(params);
-      console.log(result);
+    if (functionName === "webSearch") {
+      result = await webSearch(params);
+      
     }
-
   }
 
+  const finalResponse = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents:[
+      userPrompt,
+      response.candidates[0].content,
+      {
+        role:"tool",
+        parts:[{
+          functionResponse:{
+            name:"webSearch",
+            response:{
+              content:result
+            }
+          }
+        }]
+      }
+    ],
+    config: {
+      tools: [webSearchTool],
+      systemInstruction: systemInstruction,
+    },
+  })
 
+  console.log(finalResponse.text)
 }
-  
 
 main();
 
-
 async function webSearch({ query }) {
-
   const response = await tvly.search(query);
-  const result = response.results.map(result => result.content).join("\n\n");
+  const result = response.results.map((result) => result.content).join("\n\n");
 
   return result;
 }
