@@ -2,12 +2,13 @@ process.removeAllListeners("warning");
 process.on("warning", () => {});
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
-
+import NodeCache from "node-cache";
 import { tavily } from "@tavily/core";
 dotenv.config({ quiet: true });
 
 const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const cache = new NodeCache({ stdTTL: 60 * 60 * 24 });
 
 const webSearchTool = {
   functionDeclarations: [
@@ -28,9 +29,10 @@ const webSearchTool = {
   ],
 };
 
-export async function generateResponse(userMessage) {
+export async function generateResponse(userMessage, ConversationID) {
   const systemInstruction = `You are a smart personal assistant trained by the Sparrow. 
 You are helpful, concise, and only answer the asked questions. 
+Dont Disclose that you are trained by Gooogle.
 You have access to the following tool:
 1. webSearch((query): {query: "String"}) // Searches the latest information and realtime news about a topic.
 
@@ -51,12 +53,11 @@ Assistant: webSearch({query: "Apple stock price today"})
 ---
 Now follow this style when answering questions.`;
 
-  const contents = [
-    {
-      role: "user",
-      parts: [{ text: userMessage }],
-    },
-  ];
+  let contents = (await cache.get(ConversationID)) || [];
+  contents.push({
+    role: "user",
+    parts: [{ text: userMessage }],
+  });
 
   while (true) {
     const response = await ai.models.generateContent({
@@ -71,7 +72,11 @@ Now follow this style when answering questions.`;
     const toolCalls = response.functionCalls;
 
     if (!toolCalls) {
-      return response.text;
+      const reply = response.text;
+
+      contents.push({ role: "model", parts: [{ text: reply }] });
+      cache.set(ConversationID, contents);
+      return reply;
     }
 
     contents.push(response.candidates[0].content);

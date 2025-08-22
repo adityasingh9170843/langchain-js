@@ -37,6 +37,8 @@ function ChatMessage({ message, isUser = false }) {
 }
 
 export default function ChatUI() {
+
+  const conversationID = Date.now().toString(36) + Math.random().toString(36).substring(2,8);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([
     {
@@ -56,6 +58,7 @@ export default function ChatUI() {
     try {
       const response = await axios.post("http://localhost:3000/chat", {
         message,
+        ConversationID: conversationID,
       });
       console.log(response);
      

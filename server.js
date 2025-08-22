@@ -18,9 +18,9 @@ const port = 3000
 
 
 app.post('/chat',async(req,res)=>{
-    const {message} = req.body
+    const {message,ConversationID} = req.body
 
-    const response = await generateResponse(message)
+    const response = await generateResponse(message,ConversationID)
 
     res.json({message:response})
 })
