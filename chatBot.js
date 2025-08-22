@@ -54,6 +54,7 @@ Assistant: webSearch({query: "Apple stock price today"})
 Now follow this style when answering questions.`;
 
   let contents = (await cache.get(ConversationID)) || [];
+ 
   contents.push({
     role: "user",
     parts: [{ text: userMessage }],
@@ -76,6 +77,7 @@ Now follow this style when answering questions.`;
 
       contents.push({ role: "model", parts: [{ text: reply }] });
       cache.set(ConversationID, contents);
+      console.log(contents);
       return reply;
     }
 
@@ -102,6 +104,7 @@ Now follow this style when answering questions.`;
         },
       ],
     });
+    cache.set(ConversationID, contents);
   }
 }
 
