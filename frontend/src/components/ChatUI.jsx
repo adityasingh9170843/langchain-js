@@ -13,7 +13,7 @@ function ChatMessage({ message, isUser = false }) {
       } mb-4 animate-in slide-in-from-bottom-2 duration-300`}
     >
       <div
-        className={`flex items-start gap-3 max-w-xs lg:max-w-md ${
+        className={`flex items-start gap-5 max-w-2xl lg:max-w-3xl ${
           isUser ? "flex-row-reverse" : ""
         }`}
       >
@@ -58,9 +58,7 @@ export default function ChatUI() {
         message,
       });
       console.log(response);
-      // Add user message
-
-      // Simulate bot reply (you can replace with response.data if backend sends AI reply)
+     
       setTimeout(() => {
         setIsTyping(false);
         setMessages((prev) => [
