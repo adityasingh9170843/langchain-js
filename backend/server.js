@@ -14,7 +14,7 @@ app.use(cors({
     
 }));
 
-app.options("*", cors());
+
 const port = 3000
 
 
